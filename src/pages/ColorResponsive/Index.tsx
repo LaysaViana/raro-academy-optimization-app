@@ -28,6 +28,14 @@ const breakpoints: number[] = [
   1500,
 ];
 
+const debounce = (func: () => void, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return () => {
+    clearTimeout(timeout);
+    timeout = setTimeout(func, wait);
+  }
+};
+
 export const ColorResponsive = () => {
   const [color, setColor] = useState('');
 
@@ -40,9 +48,9 @@ export const ColorResponsive = () => {
     }
 
     alteraCor();
-    window.addEventListener('resize', alteraCor);
+    window.addEventListener('resize', debounce(alteraCor, 250));
     return () => {
-      window.removeEventListener('resize', alteraCor);
+      window.removeEventListener('resize', debounce(alteraCor, 250));
     }
   }, []);
 
