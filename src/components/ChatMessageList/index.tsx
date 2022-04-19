@@ -1,4 +1,4 @@
-import { MutableRefObject, useEffect, useRef } from "react";
+import { MutableRefObject, useEffect, useRef, useState } from "react";
 import { useChat } from "../../contexts/chat.context";
 import { useScroll } from "../../hooks/useScroll";
 import { ChatMessage } from "../ChatMessage";
@@ -8,13 +8,18 @@ import { MyChatMessage } from "../MyChatMessage";
 // número totalmente arbitrário...
 const TAMANHO_MEDIO_MENSAGEM_PX = 300;
 export const ChatMessageList = () => {
+  const QUANTIDADE_POR_PAGINA = 10;
+  const [paginasParaExibir, setPaginasParaExibir] = useState(1)
   const scrollRef: MutableRefObject<Element | null> = useRef(null);
   const { mensagens, buscaMensagem, setMensagens } = useChat();
+
   const {
     scrollBottom,
     endOfScroll,
     updateEndOfScroll,
-    getDistanceFromBottom
+    getDistanceFromBottom,
+    posicao,
+    altura
   } = useScroll(scrollRef);
 
   useEffect(() => {
@@ -37,6 +42,20 @@ export const ChatMessageList = () => {
     }
   }, [mensagens.length]);
 
+  useEffect(() => {
+    const incrementarPagina = () => {
+      const limite = altura * 0.8;
+      const totalMensagens = (paginasParaExibir + 1) * QUANTIDADE_POR_PAGINA
+      if (posicao > limite && totalMensagens < mensagens.length) {
+        setPaginasParaExibir(paginasParaExibir + 1);
+        console.log(paginasParaExibir + 1)
+      }
+    }
+
+    updateEndOfScroll();
+    incrementarPagina();
+  }, [posicao, altura]);
+
   const lerNovasMensagens = () => {
     scrollBottom();
     mensagens.forEach(mensagem => {
@@ -49,13 +68,14 @@ export const ChatMessageList = () => {
     <div id="mensagens" className="flex flex-col space-y-4 p-3 overflow-y-auto scrollbar-thumb-purple scrollbar-thumb-rounded scrollbar-track-indigo-lighter scrollbar-w-2 scrolling-touch">
       {
         [...mensagens]
-        .reverse()
-        .filter(mensagem => mensagem.texto.match(new RegExp(buscaMensagem, 'i')))
-        .map(mensagem => (
-          mensagem.autor.usuarioAtual ?
-            <MyChatMessage mensagem={ mensagem } key={mensagem.id} /> :
-            <ChatMessage mensagem={mensagem} key={mensagem.id} />
-        ))
+          .filter(mensagem => mensagem.texto.match(new RegExp(buscaMensagem, 'i')))
+          .slice(0, QUANTIDADE_POR_PAGINA * paginasParaExibir)
+          .reverse()
+          .map(mensagem => (
+            mensagem.autor.usuarioAtual ?
+              <MyChatMessage key={mensagem.id} mensagem={mensagem} /> :
+              <ChatMessage key={mensagem.id} mensagem={mensagem} />
+          ))
       }
       {
         !endOfScroll ? (
